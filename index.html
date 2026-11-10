@@ -12,6 +12,15 @@
 <main>
 <section class="view active" id="screen-home" aria-label="NPC 테스트 설정">
 <h1 class="heading">NPC 테스트 설정</h1><p class="sub">NPC 설정과 대화 샘플을 입력하고 비용 절감 효과를 비교해 보세요.</p>
+<section class="card" aria-labelledby="datasetTitle">
+<h2 class="card-title" id="datasetTitle">공개 NPC 데이터셋 불러오기 <span class="tag">JSON fetch</span></h2>
+<p class="sub">외부 데이터 파일을 불러와 NPC 설정과 대화 샘플에 적용합니다. 원본 답변은 참고용이며 AI를 호출하지 않습니다.</p>
+<label class="label" for="datasetSelect">NPC 대화 선택</label>
+<select class="input" id="datasetSelect" disabled><option value="">데이터를 불러오는 중...</option></select>
+<button class="btn secondary" type="button" id="datasetApply" disabled style="margin-top:8px">선택한 데이터를 입력창에 적용</button>
+<p id="datasetStatus" class="help-caption" role="status" aria-live="polite">JSON 데이터를 요청 중입니다.</p>
+<details class="details"><summary>원본 데이터의 참고 답변 보기 <span class="arr">⌄</span></summary><div class="details-content" id="referenceAnswer">NPC 데이터를 선택하면 원본 참고 답변이 나타납니다.</div></details>
+</section>
 <form id="settingsForm" novalidate>
 <div class="card"><h2 class="card-title">실험 조건 입력</h2>
 <label class="label" for="npcType">NPC 유형</label><select class="input" id="npcType"><option>상인</option><option>경비병</option><option>퀘스트 NPC</option><option>마을 주민</option><option>동료 NPC</option></select>
@@ -42,4 +51,5 @@
 <nav class="bottom" aria-label="하단 메뉴"><button type="button" class="on" data-screen="home" aria-label="홈"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3z"/></svg><span>홈</span></button><button type="button" data-screen="experiment" aria-label="실험 실행"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"/></svg><span>실험 실행</span></button><button type="button" data-screen="results" aria-label="결과 비교"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11h4v9zm6 0V4h4v16zm6 0v-7h4v7z"/></svg><span>결과 비교</span></button></nav>
 </div>
 <script src="js/script.js"></script>
+<script src="js/data-loader.js"></script>
 </body></html>
