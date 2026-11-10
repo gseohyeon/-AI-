@@ -1,3 +1,6 @@
+[ProtoTyping ver0.2.html](https://github.com/user-attachments/files/34615889/ProtoTyping.ver0.2.html)
+
+
 # PRD — NPC 비용 절감 프로젝트 ver.0.2
 
 **프로젝트명:** NPC 비용 절감  
