@@ -54,7 +54,7 @@ html{scroll-padding-top:92px}body{background:#e7edf7;color:var(--ink)}.app{backg
  </form>
  <button type="button" class="btn secondary" id="authModeToggle" style="margin-top:9px">처음이신가요? 회원가입</button>
  <button type="button" class="btn tertiary" id="authCancel" style="margin-top:9px">닫기</button>
- <p class="help-caption">이 계정은 현재 실행 중인 로컬 서버에 저장됩니다. 다른 기기나 GitHub Pages와 자동 연동되지 않습니다.</p>
+ <p class="help-caption">회원 정보는 EOM Join 구글 스프레드시트에 저장됩니다. 비밀번호 원문은 저장하지 않습니다.</p>
 </div>
 <form id="settingsForm" novalidate>
 
@@ -180,15 +180,14 @@ html{scroll-padding-top:92px}body{background:#e7edf7;color:var(--ink)}.app{backg
 const $=id=>document.getElementById(id);
 const toggle=$('loginToggle'),panel=$('loginPanel'),info=$('authInfo'),form=$('loginForm');
 const modeButton=$('authModeToggle'),submit=$('loginSubmit');
-let standalone=location.protocol==='file:';
-let currentUser=null, registerMode=false, busy=false;
+const API_URL='https://script.google.com/macros/s/AKfycbyHaW3VlhJbXjD2TC8c96mMsDp0NxI2u17rtzYaEpFLAF3-m5wbFKVpt3mLZxJKJMrCqQ/exec';
+const sessionKey='eom-join-session-v1';
+let currentUser=null,registerMode=false,busy=false;
 const notify=()=>window.dispatchEvent(new CustomEvent('npc-auth-changed',{detail:{nickname:currentUser}}));
 const showError=msg=>{$('loginError').textContent=msg;$('loginError').hidden=!msg;};
-const accountKey='npc-costlab-local-accounts-v1',sessionKey='npc-costlab-local-session-v1';
-const getAccounts=()=>{try{return JSON.parse(localStorage.getItem(accountKey)||'{}')}catch{return {}}};
 const bytesToHex=arr=>Array.from(arr,b=>b.toString(16).padStart(2,'0')).join('');
 async function hash(password,salt){
- if(!crypto?.subtle)throw Error('이 브라우저에서는 암호화 기능을 지원하지 않습니다. Chrome에서 열어주세요.');
+ if(!crypto?.subtle)throw Error('보안 연결(HTTPS)이 가능한 Chrome에서 실행해 주세요.');
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
  return bytesToHex(new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:120000,hash:'SHA-256'},key,256)));
 }
@@ -200,48 +199,35 @@ function draw(){
  modeButton.textContent=registerMode?'이미 계정이 있나요? 로그인':'처음이신가요? 회원가입';
  $('loginPassword').autocomplete=registerMode?'new-password':'current-password';
 }
-async function request(path,body){
- const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
- const data=await response.json();if(!response.ok)throw Error(data.error||'요청에 실패했습니다.');return data;
+async function postApi(payload){
+ const response=await fetch(API_URL,{
+  method:'POST',
+  headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify(payload)
+ });
+ const data=await response.json();
+ if(!data.success)throw Error(data.message||'요청에 실패했습니다.');
+ return data;
 }
-async function localAuth(nickname,password){
- const accounts=getAccounts();
- if(registerMode){
-  if(accounts[nickname])throw Error('이미 사용 중인 닉네임입니다.');
+async function api(action,nickname,password){
+ if(action==='register'){
   const salt=bytesToHex(crypto.getRandomValues(new Uint8Array(16)));
-  const digest=await hash(password,salt);
-  accounts[nickname]={salt,digest};localStorage.setItem(accountKey,JSON.stringify(accounts));
- }else{
-  const user=accounts[nickname];
-  if(!user||await hash(password,user.salt)!==user.digest)throw Error('아이디 또는 비밀번호가 일치하지 않습니다.');
+  const passwordHash=await hash(password,salt);
+  return await postApi({action,nickname,salt,passwordHash});
  }
- localStorage.setItem(sessionKey,nickname);return {nickname};
+ const saltResult=await postApi({action:'getSalt',nickname});
+ const passwordHash=await hash(password,saltResult.salt);
+ return await postApi({action:'verifyLogin',nickname,passwordHash});
 }
-async function refresh(){
- if(standalone){
-  const previous=localStorage.getItem(sessionKey),accounts=getAccounts();
-  currentUser=previous&&accounts[previous]?previous:null;
-  $('runtimeNotice').hidden=true;
- }else{
-  try{const response=await fetch('/api/auth/me',{credentials:'same-origin',cache:'no-store'});
-   if(!response.ok)throw Error('서버 오류');const data=await response.json();currentUser=data.nickname||null;
-  }catch{standalone=true;const previous=localStorage.getItem(sessionKey),accounts=getAccounts();currentUser=previous&&accounts[previous]?previous:null;$('runtimeNotice').hidden=true;}
- }
+function restoreSession(){
+ try{const saved=JSON.parse(localStorage.getItem(sessionKey)||'null');currentUser=saved&&saved.nickname?saved.nickname:null;}
+ catch{currentUser=null;}
  draw();notify();
 }
-toggle.addEventListener('click',async()=>{
+toggle.addEventListener('click',()=>{
  if(busy)return;
- if(currentUser){
-  busy=true;toggle.disabled=true;
-  try{if(standalone)localStorage.removeItem(sessionKey);else await request('/api/auth/logout',{});
-   currentUser=null;panel.hidden=true;form.reset();showError('');draw();notify();
-  }catch(e){showError(e.message);panel.hidden=false;}
-  finally{busy=false;toggle.disabled=false;}
- }else{
-  document.querySelector('[data-screen="home"]')?.click();
-  panel.hidden=!panel.hidden;registerMode=false;showError('');draw();
-  if(!panel.hidden)$('loginNickname').focus();
- }
+ if(currentUser){localStorage.removeItem(sessionKey);currentUser=null;panel.hidden=true;form.reset();showError('');draw();notify();}
+ else{document.querySelector('[data-screen="home"]')?.click();panel.hidden=!panel.hidden;registerMode=false;showError('');draw();if(!panel.hidden)$('loginNickname').focus();}
 });
 modeButton.addEventListener('click',()=>{registerMode=!registerMode;form.reset();showError('');draw();});
 $('authCancel').addEventListener('click',()=>{panel.hidden=true;form.reset();showError('');});
@@ -251,12 +237,15 @@ form.addEventListener('submit',async e=>{
  if(nickname.length<2||nickname.length>24||/\s/.test(nickname)){showError('닉네임은 공백 없이 2~24자로 입력해 주세요.');return;}
  if(password.length<8){showError('비밀번호는 8자 이상 입력해 주세요.');return;}
  busy=true;submit.disabled=true;modeButton.disabled=true;showError('');
- try{const result=standalone?await localAuth(nickname,password):await request(registerMode?'/api/auth/register':'/api/auth/login',{nickname,password});
-  currentUser=result.nickname;form.reset();panel.hidden=true;draw();notify();
- }catch(err){showError(err.message);}
+ try{
+  const result=await api(registerMode?'register':'login',nickname,password);
+  currentUser=result.nickname;
+  localStorage.setItem(sessionKey,JSON.stringify({nickname:result.nickname,memberId:result.memberId}));
+  form.reset();panel.hidden=true;draw();notify();
+ }catch(err){showError(err.message||'구글 시트 연결에 실패했습니다.');}
  finally{busy=false;submit.disabled=false;modeButton.disabled=false;}
 });
-refresh();
+restoreSession();
 })();
 </script>
 <script>
