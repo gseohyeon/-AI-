@@ -180,6 +180,7 @@ html{scroll-padding-top:92px}body{background:#e7edf7;color:var(--ink)}.app{backg
 const $=id=>document.getElementById(id);
 const toggle=$('loginToggle'),panel=$('loginPanel'),info=$('authInfo'),form=$('loginForm');
 const modeButton=$('authModeToggle'),submit=$('loginSubmit');
+// Google Sheets 첫 번째 배포 주소 (두 번째 배포 주소와 혼용하지 않도록 고정)
 const API_URL='https://script.google.com/macros/s/AKfycbyHaW3VlhJbXjD2TC8c96mMsDp0NxI2u17rtzYaEpFLAF3-m5wbFKVpt3mLZxJKJMrCqQ/exec';
 const sessionKey='eom-join-session-v1';
 let currentUser=null,registerMode=false,busy=false;
