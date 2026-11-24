@@ -273,7 +273,7 @@ function compactPrompt(text){ // 문장/줄 축약을 실행하는 규칙 기반
 }
 // 새로 배포한 Gemini 전용 Google Apps Script 웹 앱 /exec 주소를 붙여 넣으세요.
 // (기존 회원가입·로그인 Apps Script 주소가 아닙니다.)
-const GEMINI_PROXY_URL = 'PASTE_YOUR_GEMINI_WEB_APP_URL_HERE';
+const GEMINI_PROXY_URL = 'https://script.google.com/macros/s/AKfycbxJo97DUhssGJYlFwwHGLCbga2bN7YNT7SCKLR96dH_dAI2Lotu-NQY5aVt-QuG5Om_Dg/exec';
 async function callLLM(prompt, model) {
   if (!GEMINI_PROXY_URL.startsWith('https://script.google.com/macros/s/')) {
     throw Error('index.html의 GEMINI_PROXY_URL에 새 Gemini 웹 앱 /exec 주소를 먼저 입력해 주세요.');
